@@ -1,0 +1,43 @@
+README.md
+  s_12b491336506c3::t_39234abc453e90 13,21,31-32,98-119,122-166,173-175
+openapi-core/src/config.rs
+  s_12b491336506c3::t_037b543955fafb 1-83
+openapi-core/src/jsonschema.rs
+  s_12b491336506c3::t_05c9b253cc79da 84-85,89-90,295-310,337-346,438-478
+openapi-core/src/lib.rs
+  s_12b491336506c3::t_cf88e74fe59709 7,10,21
+openapi-core/src/workspace.rs
+  s_12b491336506c3::t_62ddbbe205914a 4,6,13-14,22-40
+openapi-lsp/src/completion.rs
+  s_abaf334fe2d8a0::t_66c7e084ca2575 5-7,12,18-19,22,47-54,65-74,77-115,119-127,132-252,273-282,322,328-331,336-343
+openapi-lsp/src/server.rs
+  s_12b491336506c3::t_5d610bafaeb183 3-5,41-48,61-67,69,71,97-119,209-229
+openapi-lsp/tests/lsp_features.rs
+  s_abaf334fe2d8a0::t_bfe04e03db9bfc 264-265,423-621
+openapi-core/src/files.rs
+  s_abaf334fe2d8a0::t_39f990c2c1c82f 1-435
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "48f97aa1b407bee258ffedfb81f3a4450d7e5c54",
+  "prompts": {},
+  "sessions": {
+    "s_12b491336506c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0e90cb84-5ab3-42c8-8cc2-37c76affc250",
+        "model": "unknown"
+      },
+      "human_author": "Dyqer <dyqer@hotmail.com>"
+    },
+    "s_abaf334fe2d8a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b6e2dee-145a-44cb-a8b9-4fac1b79b880",
+        "model": "unknown"
+      },
+      "human_author": "Dyqer <dyqer@hotmail.com>"
+    }
+  }
+}
