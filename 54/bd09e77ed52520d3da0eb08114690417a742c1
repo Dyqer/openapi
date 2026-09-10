@@ -1,0 +1,133 @@
+.gitignore
+  s_b8951a9411e0bd::t_a3d502a9a739c7 2-3
+  s_b8951a9411e0bd::t_1c4619aa145c84 1
+  s_b8951a9411e0bd::t_8154453ff68cfe 4-6
+  s_486b254b1e369a::t_8324e8bffe377d 7
+Cargo.toml
+  s_b8951a9411e0bd::t_c72a14da2bfe3b 1-13
+  s_b8951a9411e0bd::t_a9e875bc2e8bad 14-16
+  s_486b254b1e369a::t_a08891a7e4ac1a 17-33
+snippets/yaml.json
+  s_b8951a9411e0bd::t_bd399f46b7e477 1-27
+README.md
+  s_b8951a9411e0bd::t_71890531c93383 2,4,6,12,14,16-17,21,24,27,29,31,33,37,40
+  s_b8951a9411e0bd::t_2e41ff4f44e534 1,3,5,7-11,13,15,18-20,22-23,25-26,28,30,32,34-36,38-39,41
+  s_b8951a9411e0bd::t_a3a6517f55156a 42-44
+  s_486b254b1e369a::t_a1c13259e0ec52 45-73
+extension.toml
+  s_b8951a9411e0bd::t_cad3684708d7ec 1-15
+  s_b8951a9411e0bd::t_b179185da0a568 16-18
+  s_486b254b1e369a::t_77c9fef807cca7 19-26
+src/lib.rs
+  s_b8951a9411e0bd::t_a32b0dda4a8140 1-28
+  s_b8951a9411e0bd::t_42566741ebb891 29-31
+  s_486b254b1e369a::t_4bc68d038835a0 32
+Cargo.lock
+  s_486b254b1e369a::t_3143a6c657420a 1-1199
+languages/openapi-json/config.toml
+  s_486b254b1e369a::t_06532fca3ca914 1-24
+languages/openapi-json/highlights.scm
+  s_486b254b1e369a::t_713f23a8feeba3 1-16
+languages/openapi-yaml/config.toml
+  s_486b254b1e369a::t_29adc09760d801 1-31
+languages/openapi-yaml/highlights.scm
+  s_486b254b1e369a::t_c94fbb73ec30bf 1-79
+openapi-core/Cargo.toml
+  s_486b254b1e369a::t_2ab58c7702eedf 1-18
+openapi-core/schemas/SOURCES.md
+  s_486b254b1e369a::t_b23cce951fd654 1-19
+openapi-core/schemas/json-schema-2020-12/applicator.json
+  s_486b254b1e369a::t_1ec63b13e7110f 1-45
+openapi-core/schemas/json-schema-2020-12/content.json
+  s_486b254b1e369a::t_a08ed625181bbe 1-14
+openapi-core/schemas/json-schema-2020-12/core.json
+  s_486b254b1e369a::t_edbe2bdae3ab29 1-48
+openapi-core/schemas/json-schema-2020-12/format-annotation.json
+  s_486b254b1e369a::t_36344275a225eb 1-11
+openapi-core/schemas/json-schema-2020-12/meta-data.json
+  s_486b254b1e369a::t_5da94378c3c060 1-34
+openapi-core/schemas/json-schema-2020-12/schema.json
+  s_486b254b1e369a::t_c420b463ccbc18 1-58
+openapi-core/schemas/json-schema-2020-12/unevaluated.json
+  s_486b254b1e369a::t_0277b5303b8edd 1-12
+openapi-core/schemas/json-schema-2020-12/validation.json
+  s_486b254b1e369a::t_e96a01262f5d4a 1-95
+openapi-core/schemas/openapi-2.0.json
+  s_486b254b1e369a::t_e1ded4da104d65 1-1607
+openapi-core/schemas/openapi-3.0.json
+  s_486b254b1e369a::t_f500b94c15e46a 1-1662
+openapi-core/schemas/openapi-3.1.json
+  s_486b254b1e369a::t_d6c8f7d74baf47 1-1440
+openapi-core/src/detect.rs
+  s_486b254b1e369a::t_6ae3fe64580bed 1-125
+openapi-core/src/document.rs
+  s_486b254b1e369a::t_e2f2b2495faa1c 1-138
+openapi-core/src/jsonschema.rs
+  s_486b254b1e369a::t_af0431fd7cf2c6 1-570
+openapi-core/src/keys.rs
+  s_486b254b1e369a::t_643751757fe9f2 1-85
+openapi-core/src/lib.rs
+  s_486b254b1e369a::t_0e96f0430890b6 1-25
+openapi-core/src/locate.rs
+  s_486b254b1e369a::t_0d56af1c4e18fa 1-370
+openapi-core/src/pointer.rs
+  s_486b254b1e369a::t_6884b1ba6601bc 1-104
+openapi-core/src/pos.rs
+  s_486b254b1e369a::t_48506142c23bcb 1-84
+openapi-core/src/refs.rs
+  s_486b254b1e369a::t_12038e2b43876d 1-256
+openapi-core/src/resolve.rs
+  s_486b254b1e369a::t_eb60da95d39a64 1-97
+openapi-core/src/schemas.rs
+  s_486b254b1e369a::t_7a5998c937bbf0 1-116
+openapi-core/src/workspace.rs
+  s_486b254b1e369a::t_a5894c817fbabc 1-40
+openapi-lsp/Cargo.toml
+  s_486b254b1e369a::t_016ac762145df5 1-23
+openapi-lsp/src/completion.rs
+  s_486b254b1e369a::t_6427910acafafd 1-247
+openapi-lsp/src/definition.rs
+  s_486b254b1e369a::t_bfe436e8bc5d8e 1-76
+openapi-lsp/src/diagnostics.rs
+  s_486b254b1e369a::t_4838aff77b6b6a 1-88
+openapi-lsp/src/hover.rs
+  s_486b254b1e369a::t_5b88c0818392f9 1-77
+openapi-lsp/src/lib.rs
+  s_486b254b1e369a::t_384efdfe7da4c5 1-13
+openapi-lsp/src/main.rs
+  s_486b254b1e369a::t_7cff1c8d668bf3 1-10
+openapi-lsp/src/server.rs
+  s_486b254b1e369a::t_49befd070e249a 1-185
+openapi-lsp/tests/fixtures/pet.yaml
+  s_486b254b1e369a::t_f615dcd9a3c509 1-3
+openapi-lsp/tests/fixtures/petstore.json
+  s_486b254b1e369a::t_845d4fdd31f775 1-27
+openapi-lsp/tests/fixtures/petstore.yaml
+  s_486b254b1e369a::t_9ae6ffb503c401 1-29
+openapi-lsp/tests/lsp_features.rs
+  s_486b254b1e369a::t_12f99b312325c0 1-422
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "54bd09e77ed52520d3da0eb08114690417a742c1",
+  "prompts": {},
+  "sessions": {
+    "s_486b254b1e369a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a85546ed-867b-4945-a103-63a7638adb3f",
+        "model": "unknown"
+      },
+      "human_author": "Leoric Yue <leoric.yue@zoom.us>"
+    },
+    "s_b8951a9411e0bd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "02f14c9e-e7cb-4b12-a748-210437004e48",
+        "model": "grok-4.6"
+      },
+      "human_author": "Leoric Yue <leoric.yue@zoom.us>"
+    }
+  }
+}
