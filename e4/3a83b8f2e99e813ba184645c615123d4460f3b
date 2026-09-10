@@ -1,0 +1,29 @@
+.github/workflows/lsp-release.yml
+  s_a12c5ca14eae48::t_a31b36e1c3f3ba 1-145
+README.md
+  s_a12c5ca14eae48::t_b9634db7304f0e 53-75
+openapi-core/src/document.rs
+  s_a12c5ca14eae48::t_a960ead2c619d1 126-127
+openapi-core/src/jsonschema.rs
+  s_a12c5ca14eae48::t_7689850285a648 166-167,174-175,336-337,366-368
+openapi-core/src/locate.rs
+  s_a12c5ca14eae48::t_c13c7b0e16df21 86-87,342-343
+openapi-lsp/src/hover.rs
+  s_a12c5ca14eae48::t_4ef5649db4c509 69-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "e43a83b8f2e99e813ba184645c615123d4460f3b",
+  "prompts": {},
+  "sessions": {
+    "s_a12c5ca14eae48": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4a4f0228-a00e-4690-bb69-471b99b10b7c",
+        "model": "unknown"
+      },
+      "human_author": "Leoric Yue <leoric.yue@zoom.us>"
+    }
+  }
+}
