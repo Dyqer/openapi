@@ -4,8 +4,10 @@
 //! positions, but nothing about the Language Server Protocol. The protocol
 //! layer lives in the `openapi-lsp` crate.
 
+pub mod config;
 pub mod detect;
 pub mod document;
+pub mod files;
 pub mod jsonschema;
 pub mod keys;
 pub mod locate;
@@ -16,6 +18,7 @@ pub mod resolve;
 pub mod schemas;
 pub mod workspace;
 
+pub use config::{RefFileSettings, Settings};
 pub use detect::OpenApiVersion;
 pub use document::{Document, ParseFailure};
 pub use jsonschema::{Issue, KeyInfo, Schema};

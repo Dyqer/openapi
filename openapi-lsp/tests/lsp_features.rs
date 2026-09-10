@@ -261,8 +261,8 @@ fn ref_completion_keeps_quote_style_and_replaces_the_whole_pair() {
     let items = completion::completion(&ws, &uri, pos);
     let item = items
         .iter()
-        .find(|i| i.label == "#/components/schemas/Pet")
-        .unwrap_or_else(|| panic!("{:?}", items.iter().map(|i| &i.label).collect::<Vec<_>>()));
+        .find(|i| i.detail.as_deref() == Some("#/components/schemas/Pet"))
+        .unwrap_or_else(|| panic!("{:?}", items.iter().map(|i| &i.detail).collect::<Vec<_>>()));
 
     // Single quotes were typed, so single quotes come back.
     assert_eq!(
@@ -419,4 +419,203 @@ fn a_file_that_never_parsed_still_completes() {
         .map(|i| i.label)
         .collect();
     assert!(labels.contains(&"operationId".into()), "{labels:?}");
+}
+
+// --- `$ref` as a key, and across files -------------------------------------
+
+#[test]
+fn ref_is_offered_wherever_a_reference_object_fits() {
+    // The 3.0 schema declares its Reference Object through
+    // `patternProperties: {"^\\$ref$": …}`, the 3.1 one behind `if`/`then`,
+    // and 2.0 as a plain property — all three have to reach completion.
+    for head in [
+        "openapi: 3.0.3\ninfo:\n  title: t\n  version: '1'\n",
+        "openapi: 3.1.0\ninfo:\n  title: t\n  version: '1'\n",
+    ] {
+        let property = labels_at(&format!(
+            "{head}paths: {{}}\ncomponents:\n  schemas:\n    Wrap:\n      properties:\n        pet:\n          ▮\n"
+        ));
+        assert!(property.contains(&"$ref".into()), "{head}{property:?}");
+
+        // A response may be a Reference Object *or* a Response Object, so both
+        // sets of keys are on offer until one of them is written.
+        let response = labels_at(&format!(
+            "{head}paths:\n  /pets:\n    get:\n      responses:\n        '200':\n          ▮\n"
+        ));
+        assert!(response.contains(&"$ref".into()), "{head}{response:?}");
+        assert!(response.contains(&"description".into()), "{head}{response:?}");
+
+        // Once it clearly is a Response Object, `$ref` is out.
+        let described = labels_at(&format!(
+            "{head}paths:\n  /pets:\n    get:\n      responses:\n        '200':\n          description: ok\n          ▮\n"
+        ));
+        assert!(!described.contains(&"$ref".into()), "{head}{described:?}");
+        assert!(described.contains(&"content".into()), "{head}{described:?}");
+    }
+
+    let swagger = labels_at(
+        "swagger: '2.0'\ninfo:\n  title: t\n  version: '1'\npaths: {}\ndefinitions:\n  Wrap:\n    properties:\n      pet:\n        ▮\n",
+    );
+    assert!(swagger.contains(&"$ref".into()), "{swagger:?}");
+
+    // Nothing references anything at the root, so no `$ref` there.
+    let root = labels_at("openapi: 3.0.3\ninfo:\n  title: t\n  version: '1'\n▮\n");
+    assert!(!root.contains(&"$ref".into()), "{root:?}");
+}
+
+/// A split spec: `api/main.yaml` alongside files that do and do not carry a
+/// component map, a `.json` build artefact, and a nested directory.
+fn split_spec(name: &str) -> (Workspace, String, String) {
+    // One tree per test: they run in parallel, and each rebuilds its own.
+    let dir = std::env::temp_dir().join(format!("openapi-ls-refs-{}-{name}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("api/nested")).unwrap();
+    std::fs::write(
+        dir.join("api/pets.yaml"),
+        "components:\n  schemas:\n    Pet:\n      type: object\n",
+    )
+    .unwrap();
+    std::fs::write(
+        dir.join("api/nested/tags.yaml"),
+        "components:\n  schemas:\n    Tag:\n      type: string\n",
+    )
+    .unwrap();
+    // A bare schema file: no component map, so it is not offered on its own.
+    std::fs::write(dir.join("api/pet.yaml"), "PetName:\n  type: string\n").unwrap();
+    std::fs::write(dir.join("api/pets.json"), "{}\n").unwrap();
+
+    // `@@` marks both what has been typed and where the cursor sits.
+    let text = format!(
+        "{HEAD}paths: {{}}\ncomponents:\n  schemas:\n    Wrap:\n      properties:\n        pet:\n          $ref: '@@'\n"
+    );
+    let main = dir.join("api/main.yaml");
+    let uri = format!("file://{}", main.display());
+    let mut ws = Workspace::new();
+    ws.set_roots(vec![dir.clone()]);
+    (ws, uri, text)
+}
+
+/// Type `typed` into the `$ref` of `template` and ask for completions with
+/// the cursor right after it, still inside the quotes. Returns the references
+/// that would be written, which the labels deliberately no longer spell out.
+fn ref_labels(ws: &mut Workspace, uri: &str, template: &str, typed: &str) -> Vec<String> {
+    let marker = template.find("@@").expect("marker");
+    let text = template.replace("@@", typed);
+    let pos = openapi_core::pos::offset_to_position(&text, marker + typed.len());
+    ws.open(uri.to_string(), text, 1);
+    completion::completion(ws, uri, pos)
+        .into_iter()
+        .map(|i| i.detail.expect("a $ref item carries its reference"))
+        .collect()
+}
+
+#[test]
+fn empty_ref_offers_local_and_neighbouring_components() {
+    let (mut ws, uri, template) = split_spec("empty");
+    let labels = ref_labels(&mut ws, &uri, &template, "");
+
+    // Local components first, then whole references into the files around it.
+    assert!(
+        labels.contains(&"#/components/schemas/Wrap".to_string()),
+        "{labels:?}"
+    );
+    assert!(
+        labels.contains(&"./pets.yaml#/components/schemas/Pet".to_string()),
+        "{labels:?}"
+    );
+    assert!(
+        labels.contains(&"./nested/tags.yaml#/components/schemas/Tag".to_string()),
+        "{labels:?}"
+    );
+    // Bare file names are never offered on their own any more…
+    assert!(!labels.iter().any(|l| !l.contains('#')), "{labels:?}");
+    // …nor is a neighbour without the container the cursor calls for.
+    assert!(!labels.iter().any(|l| l.contains("/pet.yaml")), "{labels:?}");
+    // Only the document's own suffix is scanned.
+    assert!(!labels.iter().any(|l| l.contains(".json")), "{labels:?}");
+}
+
+#[test]
+fn typing_hash_narrows_to_this_file_and_a_path_to_the_other_one() {
+    let (mut ws, uri, template) = split_spec("hash");
+
+    let local = ref_labels(&mut ws, &uri, &template, "#");
+    assert!(
+        local.contains(&"#/components/schemas/Wrap".to_string()),
+        "{local:?}"
+    );
+    assert!(!local.iter().any(|l| l.contains(".yaml")), "{local:?}");
+
+    // Naming a file narrows to that file. `pet.yaml` is a bare schema file
+    // with no `/components/schemas`, so its top level is what gets offered —
+    // the one place we fall back to it.
+    let external = ref_labels(&mut ws, &uri, &template, "./pet.yaml#");
+    assert_eq!(external, vec!["./pet.yaml#/PetName".to_string()]);
+    assert!(!external.iter().any(|l| l.starts_with('#')), "{external:?}");
+}
+
+#[test]
+fn a_cross_file_item_inserts_the_whole_reference() {
+    let (mut ws, uri, template) = split_spec("insert");
+    let marker = template.find("@@").expect("marker");
+    let text = template.replace("@@", "");
+    let pos = openapi_core::pos::offset_to_position(&text, marker);
+    ws.open(uri.clone(), text, 1);
+
+    let items = completion::completion(&ws, &uri, pos);
+    let external = items
+        .iter()
+        .find(|i| i.detail.as_deref() == Some("./pets.yaml#/components/schemas/Pet"))
+        .unwrap_or_else(|| panic!("{:?}", items.iter().map(|i| &i.detail).collect::<Vec<_>>()));
+
+    // The label is just the component's name; the path lives beside it.
+    assert_eq!(external.label, "Pet");
+    let details = external.label_details.as_ref().expect("label details");
+    assert_eq!(details.detail.as_deref(), Some(" pets.yaml"));
+    assert_eq!(
+        details.description.as_deref(),
+        Some("./pets.yaml#/components/schemas/Pet")
+    );
+
+    // Relative path plus pointer, in the quote style already on the line.
+    assert_eq!(
+        external.insert_text.as_deref(),
+        Some("$ref: './pets.yaml#/components/schemas/Pet'")
+    );
+    assert_eq!(
+        external.insert_text_format,
+        Some(tower_lsp::lsp_types::InsertTextFormat::PLAIN_TEXT)
+    );
+
+    // This file's own components sort ahead of the neighbours'.
+    let local = items
+        .iter()
+        .find(|i| i.detail.as_deref().is_some_and(|d| d.starts_with('#')))
+        .expect("a local pointer");
+    assert!(local.sort_text < external.sort_text, "{local:?} {external:?}");
+}
+
+#[test]
+fn a_dollar_word_only_offers_dollar_keywords() {
+    // Clients fuzzy-match on word characters, so `$r` reaches them as `r`.
+    // Filtering has to happen here or `readOnly` and `required` come back.
+    for head in [
+        "openapi: 3.0.3\ninfo:\n  title: t\n  version: '1'\n",
+        "openapi: 3.1.0\ninfo:\n  title: t\n  version: '1'\n",
+    ] {
+        let typed = labels_at(&format!(
+            "{head}paths: {{}}\ncomponents:\n  schemas:\n    Wrap:\n      properties:\n        pet:\n          $r▮\n"
+        ));
+        assert!(typed.contains(&"$ref".into()), "{head}{typed:?}");
+        assert!(
+            typed.iter().all(|label| label.starts_with('$')),
+            "{head}{typed:?}"
+        );
+
+        // Without the `$` the ordinary keys are still there.
+        let plain = labels_at(&format!(
+            "{head}paths: {{}}\ncomponents:\n  schemas:\n    Wrap:\n      properties:\n        pet:\n          r▮\n"
+        ));
+        assert!(plain.contains(&"required".into()), "{head}{plain:?}");
+    }
 }

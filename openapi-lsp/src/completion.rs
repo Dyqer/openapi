@@ -2,22 +2,24 @@
 //!
 //! Two independent sources:
 //!
-//! * `$ref` values — driven by the document itself (which components exist),
-//!   and only offered when the cursor sits on a `$ref` line whose container we
-//!   recognise;
+//! * `$ref` values — driven by the document itself (which components exist)
+//!   and by the files around it, and only offered when the cursor sits on a
+//!   `$ref` line whose container we recognise;
 //! * keys and enum values — driven by the bundled OpenAPI JSON Schema, so
 //!   user-named maps (`properties`, `paths`, `components/schemas`, …) suggest
 //!   nothing instead of dumping schema keywords on you.
 
-use openapi_core::document::Document;
+use openapi_core::document::{path_to_uri, Document};
 use openapi_core::jsonschema::{KeyInfo, Schema};
 use openapi_core::keys::ref_target_pointer;
 use openapi_core::locate::pointer_at_yaml_line;
 use openapi_core::pointer::{append_segment, get_at_pointer, mapping_keys};
 use openapi_core::pos::{Position, Range};
-use openapi_core::refs::{line_has_ref, parse_ref, ref_at_position, RefHit};
+use openapi_core::refs::{line_has_ref, ref_at_position, RefHit};
+use openapi_core::resolve::load_target;
 use openapi_core::{schemas, Workspace};
 use serde_json::Value as JsonValue;
+use yaml_serde::Value as YamlValue;
 use tower_lsp::lsp_types::{
     CompletionItem, CompletionItemKind, CompletionItemLabelDetails, CompletionTextEdit,
     Documentation, InsertTextFormat, TextEdit,
@@ -42,70 +44,213 @@ pub fn completion(ws: &Workspace, uri: &str, pos: Position) -> Vec<CompletionIte
 
 // ---------------------------------------------------------------- $ref values
 
+/// Everything the `$ref` items on one line have in common.
+struct RefLine<'a> {
+    doc: &'a Document,
+    hit: Option<&'a RefHit>,
+    line: &'a str,
+    pos: Position,
+}
+
 fn ref_completions(
     ws: &Workspace,
     doc: &Document,
     pos: Position,
     line: &str,
 ) -> Vec<CompletionItem> {
-    let hit = ref_at_position(&doc.text, pos);
-    let parsed = hit
-        .as_ref()
-        .map(|h| h.parsed.clone())
-        .unwrap_or_else(|| parse_ref(""));
-
-    let Some(value) = doc.effective_value() else {
-        return Vec::new();
-    };
     // Unknown container: say nothing rather than guessing `/components/schemas`.
     let Some(target_ptr) = ref_target_pointer(doc.version_kind, &cursor_pointer(doc, pos)) else {
         return Vec::new();
     };
-
-    let (file_prefix, target_value) = match parsed.file.as_deref() {
-        Some(file) => match openapi_core::resolve::load_target(&ws.docs(), &doc.uri, Some(file)) {
-            Some((_, _, loaded)) => (format!("{file}#"), loaded),
-            None => return Vec::new(),
-        },
-        None => ("#".to_string(), value.clone()),
+    let hit = ref_at_position(&doc.text, pos);
+    let raw = hit
+        .as_ref()
+        .map(|h| h.value.trim().to_string())
+        .unwrap_or_default();
+    let ctx = RefLine {
+        doc,
+        hit: hit.as_ref(),
+        line,
+        pos,
     };
-    let Some(node) = get_at_pointer(&target_value, &target_ptr) else {
-        return Vec::new();
-    };
 
+    // A leading `#` points into this document; anything else names a file.
+    let local = raw.is_empty() || raw.starts_with('#');
+    let mut items = Vec::new();
+    if local
+        && let Some(node) = doc
+            .effective_value()
+            .and_then(|value| get_at_pointer(value, &target_ptr))
+    {
+        items.extend(pointer_items(
+            &ctx,
+            "#",
+            &target_ptr,
+            node,
+            Group::Local,
+            "this file",
+        ));
+    }
+
+    match raw.split_once('#') {
+        // `file#…`: the pointers that file offers.
+        Some((file, _)) if !file.is_empty() => {
+            items.extend(external_items(ws, &ctx, file, &target_ptr));
+        }
+        // Still typing the file name — or nothing at all yet.
+        _ if !raw.starts_with('#') => items.extend(neighbour_items(ws, &ctx, &target_ptr)),
+        _ => {}
+    }
+    items
+}
+
+/// Keys of `node`, written as `{prefix}{base}/{key}` and read as `{key}`.
+fn pointer_items(
+    ctx: &RefLine,
+    prefix: &str,
+    base: &str,
+    node: &YamlValue,
+    group: Group,
+    source: &str,
+) -> Vec<CompletionItem> {
     mapping_keys(node)
         .into_iter()
         .map(|key| {
-            let label = format!("{file_prefix}{target_ptr}/{key}");
-            let text = ref_text(doc, hit.as_ref(), &label);
-            CompletionItem {
-                label: label.clone(),
-                kind: Some(CompletionItemKind::REFERENCE),
-                detail: Some(target_ptr.clone()),
-                // Replacing the whole `$ref: …` fragment means the label alone
-                // would not match what the user typed, hence filter_text.
-                filter_text: Some(text.clone()),
-                insert_text: Some(text.clone()),
-                insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
-                text_edit: replace_range(hit.as_ref(), line, pos).map(|range| {
-                    CompletionTextEdit::Edit(TextEdit {
-                        range: to_lsp_range(range),
-                        new_text: text,
-                    })
-                }),
-                ..Default::default()
-            }
+            ref_item(
+                ctx,
+                RefCandidate {
+                    reference: format!("{prefix}{base}/{key}"),
+                    name: key,
+                    source: source.to_string(),
+                },
+                group,
+            )
         })
         .collect()
 }
 
-/// The `$ref: "…"` fragment to write, keeping the quote style already typed.
-fn ref_text(doc: &Document, hit: Option<&RefHit>, label: &str) -> String {
-    if doc.is_json() {
-        return format!("\"$ref\": \"{label}\"");
+/// Pointers inside an already-named file.
+fn external_items(
+    ws: &Workspace,
+    ctx: &RefLine,
+    file: &str,
+    target_ptr: &str,
+) -> Vec<CompletionItem> {
+    let Some((_, _, value)) = load_target(&ws.docs(), &ctx.doc.uri, Some(file)) else {
+        return Vec::new();
+    };
+    let (base, node) = match get_at_pointer(&value, target_ptr) {
+        Some(node) if !mapping_keys(node).is_empty() => (target_ptr, node),
+        // A standalone schema file is not a whole spec and has no
+        // `/components/schemas`: offer its top level instead.
+        _ => ("", &value),
+    };
+    pointer_items(
+        ctx,
+        &format!("{file}#"),
+        base,
+        node,
+        Group::External,
+        &file_name(file),
+    )
+}
+
+/// What of a path is worth putting in front of the user: `../../shared/x.yaml`
+/// reads as `x.yaml`, since the full reference is one line below it anyway.
+fn file_name(path: &str) -> String {
+    path.rsplit('/').next().unwrap_or(path).to_string()
+}
+
+/// The components the files around this one offer, as the whole reference a
+/// `$ref` needs: `./schemas/pet.yaml#/components/schemas/Pet`.
+///
+/// Only the container the cursor calls for is listed — a neighbour with no
+/// `/components/schemas` contributes nothing rather than its top level, which
+/// keeps unrelated YAML out of the list. Naming that file explicitly still
+/// offers its top level, see `external_items`.
+fn neighbour_items(ws: &Workspace, ctx: &RefLine, target_ptr: &str) -> Vec<CompletionItem> {
+    let candidates =
+        openapi_core::files::ref_candidates(&ctx.doc.uri, &ws.settings().ref_files, ws.roots());
+    let docs = ws.docs();
+    let mut items = Vec::new();
+    for candidate in candidates {
+        // An open file may hold unsaved edits, so prefer it over the disk.
+        let uri = path_to_uri(&candidate.path);
+        let names = match docs.get(&uri) {
+            Some(doc) => doc
+                .effective_value()
+                .and_then(|value| get_at_pointer(value, target_ptr))
+                .map(mapping_keys)
+                .unwrap_or_default(),
+            None => openapi_core::files::component_names(&candidate.path, target_ptr),
+        };
+        let source = file_name(&candidate.relative);
+        items.extend(names.into_iter().map(|name| {
+            ref_item(
+                ctx,
+                RefCandidate {
+                    reference: format!("{}#{target_ptr}/{name}", candidate.relative),
+                    name,
+                    source: source.clone(),
+                },
+                Group::External,
+            )
+        }));
     }
-    let quote = hit.and_then(|h| h.quote).unwrap_or('"');
-    format!("$ref: {quote}{label}{quote}")
+    items
+}
+
+/// Ordering between the kinds of `$ref` target, since an empty `$ref` offers
+/// all of them at once.
+#[derive(Clone, Copy)]
+enum Group {
+    Local,
+    External,
+}
+
+/// One `$ref` target: `reference` is what gets written, `name` and `source`
+/// are what the user reads.
+struct RefCandidate {
+    /// Last pointer segment — the component's own name.
+    name: String,
+    /// Where it comes from, short enough to sit next to the name.
+    source: String,
+    /// The whole `$ref` value, relative path and pointer included.
+    reference: String,
+}
+
+fn ref_item(ctx: &RefLine, candidate: RefCandidate, group: Group) -> CompletionItem {
+    let RefCandidate {
+        name,
+        source,
+        reference,
+    } = candidate;
+    let text = ref_text(ctx, &reference);
+    CompletionItem {
+        kind: Some(CompletionItemKind::REFERENCE),
+        // The name leads: a deeply nested target would otherwise be all
+        // `../..` by the time the list is cut off at the popup's width.
+        label: name.clone(),
+        label_details: Some(CompletionItemLabelDetails {
+            detail: Some(format!(" {source}")),
+            description: Some(reference.clone()),
+        }),
+        detail: Some(reference),
+        // Replacing the whole `$ref: …` fragment means the label alone would
+        // not match what the user typed, hence filter_text: it holds the path
+        // as well, so filtering on either the name or the path works.
+        filter_text: Some(text.clone()),
+        sort_text: Some(format!("{}{name}", group as u8)),
+        insert_text: Some(text.clone()),
+        insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
+        text_edit: replace_range(ctx.hit, ctx.line, ctx.pos).map(|range| {
+            CompletionTextEdit::Edit(TextEdit {
+                range: to_lsp_range(range),
+                new_text: text,
+            })
+        }),
+        ..Default::default()
+    }
 }
 
 /// Range the completion overwrites: the `$ref` key through the end of its
@@ -123,6 +268,16 @@ fn replace_range(hit: Option<&RefHit>, line: &str, pos: Position) -> Option<Rang
             })
         }
     }
+}
+
+/// The `$ref: …` fragment to write, keeping the quote style already typed.
+fn ref_text(ctx: &RefLine, value: &str) -> String {
+    let (key, quote) = if ctx.doc.is_json() {
+        ("\"$ref\"", '"')
+    } else {
+        ("$ref", ctx.hit.and_then(|h| h.quote).unwrap_or('"'))
+    };
+    format!("{key}: {quote}{value}{quote}")
 }
 
 // ------------------------------------------------------- keys and enum values
@@ -164,13 +319,26 @@ fn schema_completions(doc: &Document, pos: Position, line: &str) -> Vec<Completi
         .and_then(|value| get_at_pointer(value, &parent))
         .map(mapping_keys)
         .unwrap_or_default();
+    let word = typed_text(line, typed);
 
     schema
         .keys(&schema.schemas_at(instance, &parent))
         .into_iter()
         .filter(|key| !existing.iter().any(|e| e == &key.name))
+        // A `$`-prefixed word asks for a `$` keyword. Clients fuzzy-match on
+        // word characters alone, so `$r` would otherwise still bring up
+        // `readOnly` and `required`; filtering here is what keeps it to `$ref`.
+        .filter(|key| !word.starts_with('$') || key.name.starts_with('$'))
         .map(|key| key_item(doc, typed, &parent, key))
         .collect()
+}
+
+/// What `typed_range` covers, without the opening quote JSON adds.
+fn typed_text(line: &str, typed: Range) -> String {
+    let start = typed.start.character as usize;
+    let len = typed.end.character.saturating_sub(typed.start.character) as usize;
+    let word: String = line.chars().skip(start).take(len).collect();
+    word.trim_start_matches(['"', '\'']).to_string()
 }
 
 fn key_item(doc: &Document, typed: Range, parent: &str, key: KeyInfo) -> CompletionItem {

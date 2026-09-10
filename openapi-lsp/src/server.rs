@@ -1,5 +1,8 @@
 //! JSON-RPC surface: capabilities, document sync, and request routing.
 
+use std::path::PathBuf;
+
+use openapi_core::config::Settings;
 use openapi_core::pos;
 use openapi_core::Workspace;
 use tokio::sync::Mutex;
@@ -35,7 +38,14 @@ impl Backend {
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
-    async fn initialize(&self, _params: InitializeParams) -> Result<InitializeResult> {
+    async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+        {
+            let mut ws = self.workspace.lock().await;
+            ws.set_roots(workspace_roots(&params));
+            if let Some(options) = params.initialization_options.as_ref() {
+                ws.set_settings(Settings::from_json(options));
+            }
+        }
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
@@ -48,9 +58,17 @@ impl LanguageServer for Backend {
                     resolve_provider: Some(false),
                     work_done_progress_options: Default::default(),
                 }),
+                workspace: Some(WorkspaceServerCapabilities {
+                    workspace_folders: Some(WorkspaceFoldersServerCapabilities {
+                        supported: Some(true),
+                        change_notifications: Some(OneOf::Left(true)),
+                    }),
+                    ..Default::default()
+                }),
                 completion_provider: Some(CompletionOptions {
+                    // `$` opens the `$ref` key, `.` and `/` a relative path.
                     trigger_characters: Some(
-                        ["#", "/", "\"", "'", ":"]
+                        ["#", "/", "\"", "'", ":", "$", "."]
                             .iter()
                             .map(|s| s.to_string())
                             .collect(),
@@ -74,6 +92,29 @@ impl LanguageServer for Backend {
 
     async fn shutdown(&self) -> Result<()> {
         Ok(())
+    }
+
+    async fn did_change_configuration(&self, params: DidChangeConfigurationParams) {
+        let mut ws = self.workspace.lock().await;
+        ws.set_settings(Settings::from_json(&params.settings));
+    }
+
+    async fn did_change_workspace_folders(&self, params: DidChangeWorkspaceFoldersParams) {
+        let mut ws = self.workspace.lock().await;
+        let mut roots: Vec<PathBuf> = ws.roots().to_vec();
+        for removed in &params.event.removed {
+            if let Some(path) = folder_path(removed) {
+                roots.retain(|root| *root != path);
+            }
+        }
+        for added in &params.event.added {
+            if let Some(path) = folder_path(added)
+                && !roots.contains(&path)
+            {
+                roots.push(path);
+            }
+        }
+        ws.set_roots(roots);
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
@@ -163,6 +204,27 @@ impl LanguageServer for Backend {
         );
         Ok(Some(CompletionResponse::Array(items)))
     }
+}
+
+/// The directories the editor has open, newest protocol field first.
+fn workspace_roots(params: &InitializeParams) -> Vec<PathBuf> {
+    if let Some(folders) = params.workspace_folders.as_ref() {
+        let roots: Vec<PathBuf> = folders.iter().filter_map(folder_path).collect();
+        if !roots.is_empty() {
+            return roots;
+        }
+    }
+    // `rootUri` is deprecated but still all some clients send.
+    params
+        .root_uri
+        .as_ref()
+        .and_then(|uri| uri.to_file_path().ok())
+        .into_iter()
+        .collect()
+}
+
+fn folder_path(folder: &WorkspaceFolder) -> Option<PathBuf> {
+    folder.uri.to_file_path().ok()
 }
 
 pub fn from_lsp_position(pos: Position) -> pos::Position {

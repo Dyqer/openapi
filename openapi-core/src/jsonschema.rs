@@ -81,16 +81,13 @@ impl<'a> Schema<'a> {
         let mut out: Vec<KeyInfo> = Vec::new();
         for schema in schemas {
             let required = string_array(schema.get("required"));
-            let Some(props) = schema.get("properties").and_then(Value::as_object) else {
-                continue;
-            };
-            for (name, sub) in props {
-                if out.iter().any(|k| &k.name == name) {
+            for (name, sub) in declared_keys(schema) {
+                if out.iter().any(|k| k.name == name) {
                     continue;
                 }
                 out.push(KeyInfo {
-                    name: name.clone(),
-                    required: required.iter().any(|r| r == name),
+                    required: required.contains(&name),
+                    name,
                     ty: self
                         .field(sub, "type")
                         .and_then(Value::as_str)
@@ -295,6 +292,22 @@ impl<'a> Schema<'a> {
                 self.expand(sub, instance, out, depth + 1);
             }
         }
+        // The OAS 3.1 schema picks Reference Object vs. concrete object this
+        // way, so without it those positions would describe no keys at all.
+        if let Some(condition) = schema.get("if") {
+            let taken = self.fits(condition, instance);
+            for keyword in ["then", "else"] {
+                let branch = match keyword {
+                    "then" => taken.unwrap_or(true),
+                    _ => !taken.unwrap_or(false),
+                };
+                if branch
+                    && let Some(sub) = schema.get(keyword)
+                {
+                    self.expand(sub, instance, out, depth + 1);
+                }
+            }
+        }
         for keyword in ["oneOf", "anyOf"] {
             let Some(branches) = schema.get(keyword).and_then(Value::as_array) else {
                 continue;
@@ -319,6 +332,16 @@ impl<'a> Schema<'a> {
                 self.expand(sub, instance, out, depth + 1);
             }
         }
+    }
+
+    /// Whether `instance` satisfies `schema`. `None` when there is nothing to
+    /// judge — no node, or a node whose value is still being typed — in which
+    /// case callers keep every branch in play.
+    fn fits(&self, schema: &'a Value, instance: Option<&Value>) -> Option<bool> {
+        let node = instance.filter(|node| !node.is_null())?;
+        let mut errs = Vec::new();
+        self.check(schema, node, "", &mut errs, 0);
+        Some(errs.is_empty())
     }
 
     /// Schemas for the child reached by `segment`.
@@ -410,6 +433,47 @@ impl<'a> Schema<'a> {
                 .find_map(|target| target.get(name))
         })
     }
+}
+
+/// Keys a single schema names, from `properties` and from those
+/// `patternProperties` whose pattern matches exactly one literal key.
+///
+/// The OAS 3.0 schema writes its Reference Object as
+/// `patternProperties: { "^\\$ref$": … }`, so without the second source
+/// `$ref` would never be offered in a 3.0 document.
+fn declared_keys(schema: &Value) -> Vec<(String, &Value)> {
+    let mut out: Vec<(String, &Value)> = Vec::new();
+    if let Some(props) = schema.get("properties").and_then(Value::as_object) {
+        out.extend(props.iter().map(|(name, sub)| (name.clone(), sub)));
+    }
+    if let Some(patterns) = schema.get("patternProperties").and_then(Value::as_object) {
+        for (pattern, sub) in patterns {
+            if let Some(name) = literal_pattern(pattern) {
+                out.push((name, sub));
+            }
+        }
+    }
+    out
+}
+
+/// The single key a fully anchored, metacharacter-free pattern accepts:
+/// `^\$ref$` → `$ref`. `None` for anything that matches more than one key.
+fn literal_pattern(pattern: &str) -> Option<String> {
+    let body = pattern.strip_prefix('^')?.strip_suffix('$')?;
+    let mut out = String::new();
+    let mut chars = body.chars();
+    while let Some(c) = chars.next() {
+        match c {
+            // `\d`, `\w`, … are classes, not literals.
+            '\\' => match chars.next()? {
+                escaped if escaped.is_alphanumeric() => return None,
+                escaped => out.push(escaped),
+            },
+            c if "^$.|?*+()[]{}".contains(c) => return None,
+            c => out.push(c),
+        }
+    }
+    (!out.is_empty()).then_some(out)
 }
 
 fn child_value<'v>(node: &'v Value, segment: &str) -> Option<&'v Value> {

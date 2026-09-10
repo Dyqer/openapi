@@ -10,7 +10,7 @@ WASI). It is split into two ordinary crates instead:
 | Path | Role |
 | --- | --- |
 | `extension.toml` + `src/lib.rs` | Zed extension: locate and launch `openapi-lsp` |
-| `openapi-core/` | Document model: OAS detection, JSON Pointer, `$ref` resolution, offset/position math, JSON Schema lookup (no LSP) |
+| `openapi-core/` | Document model: OAS detection, JSON Pointer, `$ref` resolution, neighbouring-file discovery, settings, offset/position math, JSON Schema lookup (no LSP) |
 | `openapi-core/schemas/` | Bundled OpenAPI 2.0 / 3.0 / 3.1 JSON Schemas (provenance in `SOURCES.md`) |
 | `openapi-lsp/` | Language server: `server.rs` implements `LanguageServer`, and `completion`/`hover`/`definition`/`diagnostics` each own one capability |
 
@@ -18,7 +18,7 @@ WASI). It is split into two ordinary crates instead:
 openapi-lsp/src
 ├── main.rs          tokio + LspService/Server, served over stdio
 ├── server.rs        capabilities, document sync, request dispatch (impl LanguageServer)
-├── completion.rs    $ref target completion + schema-driven key/enum completion
+├── completion.rs    $ref target completion (local, cross-file, file paths) + schema-driven key/enum completion
 ├── hover.rs         $ref hover preview, documentHighlight
 ├── definition.rs    $ref go-to-definition, documentLink
 └── diagnostics.rs   parse errors, unresolvable $ref/Pointer, JSON Schema validation
@@ -28,7 +28,8 @@ openapi-lsp/src
 
 - **Go to Definition** and **document links** on `$ref`, including cross-file refs
 - **Hover** preview of the node a `$ref` points at
-- **Completion** for `$ref` targets, plus schema-driven keys and enum values
+- **Completion** for `$ref` targets — components in this file, files around it, and the pointers
+  inside those files — plus schema-driven keys and enum values (`$ref` included)
 - **Diagnostics** for parse errors, unresolvable `$ref`/JSON Pointer, and JSON Schema violations
 - YAML and JSON specs, OpenAPI 2.0 / 3.0 / 3.1
 
@@ -94,21 +95,84 @@ archive somewhere on `PATH` is enough — no `cargo install` required.
 
 Completions come from two independent sources:
 
-- **`$ref` values** come from the document itself (which components exist). Completion only fires
-  when the container under the cursor matches the table in `openapi-core/src/keys.rs` — no match
-  means no suggestions, rather than guessing `/components/schemas`. Accepting a completion replaces
-  the whole `$ref: "..."` entry and keeps whichever quote style you already typed.
+- **`$ref` values** come from the document itself (which components exist) and from the files
+  around it. Completion only fires when the container under the cursor matches the table in
+  `openapi-core/src/keys.rs` — no match means no suggestions, rather than guessing
+  `/components/schemas`. Accepting a completion replaces the whole `$ref: "..."` entry and keeps
+  whichever quote style you already typed. What you get depends on what you have typed:
+
+  | Typed | Offered |
+  | --- | --- |
+  | nothing yet | both lists below, this file's own components first |
+  | `#…` | components in this file: `#/components/schemas/Pet` |
+  | `./pets.yaml#…` | components in that file — its component map, or its top level when it is a standalone schema file with no `/components/schemas` |
+  | anything else | components in the files around this one, as the whole reference: `./schemas/pets.yaml#/components/schemas/Pet`. Bare file names are never offered, and a neighbour that has no component map contributes nothing — naming it explicitly is what falls back to its top level |
+
+  The list reads name-first — `Pet`, then a dim `pet.yaml`, with the whole
+  `../../shared/schemas/pet.yaml#/components/schemas/Pet` as the item's description. Leading with
+  the reference would bury the name behind a row of `../..` at the popup's width. Filtering still
+  runs against the full text, so either the name or the path narrows the list.
+
+  Keys are filtered on the server when the word under the cursor starts with `$`, so `$r` offers
+  `$ref` alone. Clients fuzzy-match on word characters and would otherwise still rank `readOnly`
+  and `required` into that list.
+
 - **Keys and enum values** come from the bundled JSON Schemas. That is why schema keywords no
   longer pop up under user-named maps such as `properties`, `paths`, or `components/schemas`, while
-  positions like `type:` and `in:` do offer enum values.
+  positions like `type:` and `in:` do offer enum values. `$ref` itself is offered wherever a
+  Reference Object fits, which takes two workarounds: the 3.0 schema declares it through
+  `patternProperties: {"^\\$ref$": …}`, and the 3.1 schema hides it behind `if`/`then`
+  (`openapi-core/src/jsonschema.rs` handles both).
+
+## Settings
+
+Which files `$ref` completion offers is configurable. In Zed, put them under
+`lsp.openapi-lsp.initialization_options` in `settings.json` (a `workspace/didChangeConfiguration`
+payload with the same shape works too):
+
+```json
+{
+  "lsp": {
+    "openapi-lsp": {
+      "initialization_options": {
+        "openapi": {
+          "refFiles": {
+            "scanUp": 6,
+            "scanDown": 6,
+            "maxFiles": 500,
+            "extensions": [],
+            "skipDirs": ["node_modules", "target", "dist", "build", "vendor"]
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `scanUp` | `6` | Directory levels above the document to include |
+| `scanDown` | `6` | Directory levels below the document's own directory to descend into |
+| `maxFiles` | `500` | Upper bound on offered files |
+| `extensions` | `[]` | Extensions to scan; empty means "the same suffix as the file being edited", so a YAML spec never suggests its own JSON build output |
+| `skipDirs` | see above | Directory names never scanned, whatever their depth |
+
+The directories Zed has open are a hard ceiling: whatever `scanUp` says, the scan never leaves the
+worktree. With no workspace folder to go on (a single file opened on its own) it stops at the
+enclosing `.git`/`.hg` checkout instead. Dotted directories and symlinks are never followed, and a
+scan is reused for two seconds so a burst of keystrokes costs one walk. Each neighbour is parsed
+once and remembered until its size or modification time changes; open files are read from the
+editor's buffer instead, so unsaved components show up.
 
 Diagnostics have the same source: unknown keys, missing required keys, enum/type mismatches. Nodes
 whose value is `null` (i.e. you are still typing) are skipped so the file does not light up mid-keystroke.
 
 All three schemas (2.0 / 3.0 / 3.1) are bundled under `openapi-core/schemas/`. The 3.1 Schema
 Object delegates to the JSON Schema 2020-12 dialect via `$dynamicRef: "#meta"`, so that dialect and
-its vocabularies are bundled too. `unevaluatedProperties` and `if`/`then` are not evaluated, which
-makes the "unknown key" check slightly more permissive on 3.1 than on 3.0.
+its vocabularies are bundled too. `if`/`then`/`else` steers completion but is not enforced by
+validation, and `unevaluatedProperties` is ignored entirely, which makes the "unknown key" check
+slightly more permissive on 3.1 than on 3.0.
 
 To debug, check `zed: open log`, or run `zed --foreground` to watch the server's
 `window/logMessage` output.
