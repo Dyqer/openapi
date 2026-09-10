@@ -1,0 +1,19 @@
+.github/workflows/lsp-release.yml
+  s_abaf334fe2d8a0::t_e7f0a53ce3cc92 112,128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "85705a56ab80594a17129a3691c75917b75861b7",
+  "prompts": {},
+  "sessions": {
+    "s_abaf334fe2d8a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b6e2dee-145a-44cb-a8b9-4fac1b79b880",
+        "model": "unknown"
+      },
+      "human_author": "Dyqer <dyqer@hotmail.com>"
+    }
+  }
+}
