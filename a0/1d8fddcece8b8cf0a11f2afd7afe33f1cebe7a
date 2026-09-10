@@ -1,0 +1,23 @@
+Cargo.lock
+  s_abaf334fe2d8a0::t_bfef5a5a35cdcd 474,484,1119
+Cargo.toml
+  s_abaf334fe2d8a0::t_917e740d83da42 9
+extension.toml
+  s_abaf334fe2d8a0::t_073eaeb49499a3 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "a01d8fddcece8b8cf0a11f2afd7afe33f1cebe7a",
+  "prompts": {},
+  "sessions": {
+    "s_abaf334fe2d8a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b6e2dee-145a-44cb-a8b9-4fac1b79b880",
+        "model": "unknown"
+      },
+      "human_author": "Dyqer <dyqer@hotmail.com>"
+    }
+  }
+}
