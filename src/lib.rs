@@ -110,9 +110,11 @@ impl OpenApiExtension {
             )
         };
 
-        // Both archives wrap their contents in a `<stem>/` directory.
+        // Archives hold their files at the root, so the binary lands straight
+        // in the install directory. That directory is keyed by version, which
+        // is what makes an upgrade a fresh download rather than an overwrite.
         let install_dir = format!("openapi-lsp-{version}");
-        let binary_path = format!("{install_dir}/{stem}/{binary_name}");
+        let binary_path = format!("{install_dir}/{binary_name}");
 
         if !std::fs::metadata(&binary_path).is_ok_and(|stat| stat.is_file()) {
             let asset = release

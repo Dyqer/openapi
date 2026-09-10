@@ -80,7 +80,8 @@ On an `lsp-v*` tag (or a manual `workflow_dispatch` against an existing tag) CI 
 (`-D warnings`) and the tests, then builds five targets and packages each one as
 `openapi-lsp-<target>.tar.gz` (`.zip` on Windows) with a sibling `.sha256`, and finally creates or
 updates the GitHub release for that tag. The version lives in the release, not the file name, so
-the archives are simply `openapi-lsp-aarch64-apple-darwin.tar.gz` and friends:
+the archives are simply `openapi-lsp-aarch64-apple-darwin.tar.gz` and friends, each holding the
+binary at its root with no wrapper directory:
 
 | Target | Runner |
 | --- | --- |

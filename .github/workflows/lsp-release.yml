@@ -77,7 +77,9 @@ jobs:
 
       # One archive per target, named openapi-lsp-<target>.{tar.gz,zip}. The
       # version is carried by the release itself, not the file name, so the
-      # Zed extension can build an asset name from the platform alone. A
+      # Zed extension can build an asset name from the platform alone. The
+      # contents sit at the archive root — no wrapper directory — so the
+      # binary lands directly in whatever directory it is unpacked into. A
       # sibling .sha256 lets users verify the download.
       - name: Package (unix)
         if: runner.os != 'Windows'
@@ -87,10 +89,9 @@ jobs:
         run: |
           set -euo pipefail
           NAME="openapi-lsp-${TARGET}"
-          mkdir -p "dist/${NAME}"
-          cp "target/${TARGET}/release/openapi-lsp" "dist/${NAME}/"
-          cp LICENSE README.md "dist/${NAME}/"
-          tar -C dist -czf "dist/${NAME}.tar.gz" "${NAME}"
+          mkdir -p stage dist
+          cp "target/${TARGET}/release/openapi-lsp" LICENSE README.md stage/
+          tar -C stage -czf "dist/${NAME}.tar.gz" openapi-lsp LICENSE README.md
           shasum -a 256 "dist/${NAME}.tar.gz" | awk '{print $1}' > "dist/${NAME}.tar.gz.sha256"
 
       - name: Package (windows)
@@ -101,10 +102,10 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $name = "openapi-lsp-$env:TARGET"
-          New-Item -ItemType Directory -Force -Path "dist/$name" | Out-Null
-          Copy-Item "target/$env:TARGET/release/openapi-lsp.exe" "dist/$name/"
-          Copy-Item LICENSE, README.md "dist/$name/"
-          Compress-Archive -Path "dist/$name" -DestinationPath "dist/$name.zip"
+          New-Item -ItemType Directory -Force -Path stage, dist | Out-Null
+          Copy-Item "target/$env:TARGET/release/openapi-lsp.exe" stage/
+          Copy-Item LICENSE, README.md stage/
+          Compress-Archive -Path "stage/*" -DestinationPath "dist/$name.zip"
           (Get-FileHash "dist/$name.zip" -Algorithm SHA256).Hash.ToLower() |
             Set-Content -NoNewline "dist/$name.zip.sha256"
 
