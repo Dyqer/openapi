@@ -35,22 +35,23 @@ openapi-lsp/src
 
 ## Install
 
-1. Put the language server on your `PATH`. Either download an archive from
-   [Releases](https://github.com/Dyqer/openapi/releases) and unpack the binary into a directory on
-   your `PATH`, or build it yourself:
-
-   ```bash
-   cargo install --path openapi-lsp
-   # verify
-   which openapi-lsp
-   ```
-
-2. Install the extension in Zed:
+1. Install the extension in Zed:
 
    - Command Palette → `zed: install dev extension`
    - Select the **repo root** (the directory containing `extension.toml`)
 
-3. Open an OpenAPI YAML/JSON file and try Go to Definition on a `$ref`.
+2. Open an OpenAPI YAML/JSON file and try Go to Definition on a `$ref`.
+
+The language server is a separate binary, and the extension finds it for you: if `openapi-lsp` is
+on your `PATH` that one is used, otherwise the archive matching your platform is downloaded from
+[Releases](https://github.com/Dyqer/openapi/releases) on first start. To work on the server
+itself, put your own build on `PATH` — it always takes precedence:
+
+```bash
+cargo install --path openapi-lsp
+# verify
+which openapi-lsp
+```
 
 Zed builds the extension with `cargo build --target wasm32-wasip2`, so the workspace's
 `default-members` contains only the root crate — `openapi-core` and `openapi-lsp` are never pulled
@@ -77,9 +78,9 @@ git tag lsp-v0.2.0 && git push origin lsp-v0.2.0
 
 On an `lsp-v*` tag (or a manual `workflow_dispatch` against an existing tag) CI first runs clippy
 (`-D warnings`) and the tests, then builds five targets and packages each one as
-`openapi-lsp-<version>-<target>.tar.gz` (`.zip` on Windows) with a sibling `.sha256`, and finally
-creates or updates the GitHub release for that tag. `<version>` is the tag without its `lsp-`
-prefix, so `lsp-v0.2.0` produces `openapi-lsp-v0.2.0-aarch64-apple-darwin.tar.gz`:
+`openapi-lsp-<target>.tar.gz` (`.zip` on Windows) with a sibling `.sha256`, and finally creates or
+updates the GitHub release for that tag. The version lives in the release, not the file name, so
+the archives are simply `openapi-lsp-aarch64-apple-darwin.tar.gz` and friends:
 
 | Target | Runner |
 | --- | --- |
@@ -89,8 +90,9 @@ prefix, so `lsp-v0.2.0` produces `openapi-lsp-v0.2.0-aarch64-apple-darwin.tar.gz
 | `aarch64-apple-darwin` | `macos-latest` |
 | `x86_64-pc-windows-msvc` | `windows-latest` |
 
-The extension only ever looks for `openapi-lsp` on `PATH` (`src/lib.rs`), so unpacking a release
-archive somewhere on `PATH` is enough — no `cargo install` required.
+`src/lib.rs` downloads from these same assets: the platform alone determines the name, so the
+extension needs no version table. Only the five targets above are covered; on anything else the
+extension asks you to build the server yourself.
 
 ## Where completions come from
 

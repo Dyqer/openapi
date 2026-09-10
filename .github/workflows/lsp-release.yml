@@ -75,19 +75,18 @@ jobs:
       - name: cargo build
         run: cargo build -p openapi-lsp --release --locked --target ${{ matrix.target }}
 
-      # One archive per target, named openapi-lsp-<version>-<target>.{tar.gz,zip}
-      # — the tag without its `lsp-` prefix, so `lsp-v0.2.0` yields
-      # `openapi-lsp-v0.2.0-...` rather than a doubled `openapi-lsp-lsp-v0.2.0-...`.
-      # A sibling .sha256 lets users verify the download.
+      # One archive per target, named openapi-lsp-<target>.{tar.gz,zip}. The
+      # version is carried by the release itself, not the file name, so the
+      # Zed extension can build an asset name from the platform alone. A
+      # sibling .sha256 lets users verify the download.
       - name: Package (unix)
         if: runner.os != 'Windows'
         shell: bash
         env:
-          TAG: ${{ inputs.tag || github.ref_name }}
           TARGET: ${{ matrix.target }}
         run: |
           set -euo pipefail
-          NAME="openapi-lsp-${TAG#lsp-}-${TARGET}"
+          NAME="openapi-lsp-${TARGET}"
           mkdir -p "dist/${NAME}"
           cp "target/${TARGET}/release/openapi-lsp" "dist/${NAME}/"
           cp LICENSE README.md "dist/${NAME}/"
@@ -98,12 +97,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         env:
-          TAG: ${{ inputs.tag || github.ref_name }}
           TARGET: ${{ matrix.target }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $version = $env:TAG -replace '^lsp-', ''
-          $name = "openapi-lsp-$version-$env:TARGET"
+          $name = "openapi-lsp-$env:TARGET"
           New-Item -ItemType Directory -Force -Path "dist/$name" | Out-Null
           Copy-Item "target/$env:TARGET/release/openapi-lsp.exe" "dist/$name/"
           Copy-Item LICENSE, README.md "dist/$name/"
