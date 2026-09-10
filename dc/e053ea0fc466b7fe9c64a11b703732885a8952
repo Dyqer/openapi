@@ -1,0 +1,27 @@
+.github/workflows/lsp-release.yml
+  s_abaf334fe2d8a0::t_085d62838d04b4 78-81,89,103
+Cargo.lock
+  s_abaf334fe2d8a0::t_fd80ef808d20ac 1121
+Cargo.toml
+  s_abaf334fe2d8a0::t_aeb05ad3ecdf36 33
+README.md
+  s_abaf334fe2d8a0::t_bfd96635428fd4 38,43-54,81-83,93-95
+src/lib.rs
+  s_abaf334fe2d8a0::t_080d5c7fcf5a10 1-11,14-17,28-29,31,35-74,77-177,181-204
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "dce053ea0fc466b7fe9c64a11b703732885a8952",
+  "prompts": {},
+  "sessions": {
+    "s_abaf334fe2d8a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b6e2dee-145a-44cb-a8b9-4fac1b79b880",
+        "model": "unknown"
+      },
+      "human_author": "Dyqer <dyqer@hotmail.com>"
+    }
+  }
+}
