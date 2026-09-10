@@ -1,0 +1,21 @@
+LICENSE
+  s_a12c5ca14eae48::t_d57d9eac3cfba1 1-21
+extension.toml
+  s_a12c5ca14eae48::t_026267d5bdf8c6 5,7,11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "fc35b0044bbae78a0b23cc23e84f450627daf670",
+  "prompts": {},
+  "sessions": {
+    "s_a12c5ca14eae48": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4a4f0228-a00e-4690-bb69-471b99b10b7c",
+        "model": "unknown"
+      },
+      "human_author": "Leoric Yue <leoric.yue@zoom.us>"
+    }
+  }
+}
