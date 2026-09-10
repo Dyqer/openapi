@@ -1,0 +1,33 @@
+[workspace]
+members = ["openapi-core", "openapi-lsp"]
+# Zed builds the extension with a bare `cargo build --target wasm32-wasip2` in
+# this directory, so only the extension crate may be a default member.
+default-members = ["."]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+license = "MIT"
+
+[workspace.dependencies]
+openapi-core = { path = "openapi-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+yaml_serde = "0.10"
+regex = "1"
+
+[package]
+name = "zed-openapi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Zed extension that starts the OpenAPI language server"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+zed_extension_api = "0.7.0"

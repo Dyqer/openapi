@@ -1,0 +1,15 @@
+id = "openapi"
+name = "OpenAPI"
+version = "0.1.0"
+schema_version = 1
+authors = ["Dyqer"]
+description = "OpenAPI language support: spec detection, $ref jump, hover, completion, and diagnostics"
+repository = "https://github.com/Dyqer/openapi"
+
+[language_servers.openapi-lsp]
+name = "OpenAPI Language Server"
+languages = ["YAML", "JSON"]
+
+[language_servers.openapi-lsp.language_ids]
+"YAML" = "yaml"
+"JSON" = "json"

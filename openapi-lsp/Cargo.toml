@@ -1,0 +1,23 @@
+[package]
+name = "openapi-lsp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "OpenAPI language server: spec detection, $ref navigation, hover, completion, and diagnostics"
+publish = false
+
+[[bin]]
+name = "openapi-lsp"
+path = "src/main.rs"
+
+[lib]
+name = "openapi_lsp"
+path = "src/lib.rs"
+
+[dependencies]
+openapi-core.workspace = true
+serde_json.workspace = true
+yaml_serde.workspace = true
+tokio = { version = "1", features = ["io-std", "macros", "rt-multi-thread", "sync"] }
+tower-lsp = "0.20"
