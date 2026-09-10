@@ -1,0 +1,25 @@
+README.md
+  s_a12c5ca14eae48::t_f5c079b866abe7 3-5,7-8,10,12-15,19-24,27,29-33,35-45,47,49-50,52,54-57,59,62,65,69,71,77-80,82,90-91,93,95,97-103,105-106,108-111,113-114
+openapi-core/src/keys.rs
+  s_a12c5ca14eae48::t_2beeff48b3476b 3-4
+openapi-lsp/src/completion.rs
+  s_a12c5ca14eae48::t_895e7dbf6666e1 3
+openapi-lsp/tests/lsp_features.rs
+  s_a12c5ca14eae48::t_334738fd67183e 177
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "a1a3bb1994d2f50272bbe93e2eb866240ac437fd",
+  "prompts": {},
+  "sessions": {
+    "s_a12c5ca14eae48": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4a4f0228-a00e-4690-bb69-471b99b10b7c",
+        "model": "unknown"
+      },
+      "human_author": "Leoric Yue <leoric.yue@zoom.us>"
+    }
+  }
+}
