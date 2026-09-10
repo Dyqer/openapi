@@ -75,8 +75,10 @@ jobs:
       - name: cargo build
         run: cargo build -p openapi-lsp --release --locked --target ${{ matrix.target }}
 
-      # One archive per target, named openapi-lsp-<tag>-<target>.{tar.gz,zip},
-      # with a sibling .sha256 so users can verify the download.
+      # One archive per target, named openapi-lsp-<version>-<target>.{tar.gz,zip}
+      # — the tag without its `lsp-` prefix, so `lsp-v0.2.0` yields
+      # `openapi-lsp-v0.2.0-...` rather than a doubled `openapi-lsp-lsp-v0.2.0-...`.
+      # A sibling .sha256 lets users verify the download.
       - name: Package (unix)
         if: runner.os != 'Windows'
         shell: bash
@@ -85,7 +87,7 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           set -euo pipefail
-          NAME="openapi-lsp-${TAG}-${TARGET}"
+          NAME="openapi-lsp-${TAG#lsp-}-${TARGET}"
           mkdir -p "dist/${NAME}"
           cp "target/${TARGET}/release/openapi-lsp" "dist/${NAME}/"
           cp LICENSE README.md "dist/${NAME}/"
@@ -100,7 +102,8 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $name = "openapi-lsp-$env:TAG-$env:TARGET"
+          $version = $env:TAG -replace '^lsp-', ''
+          $name = "openapi-lsp-$version-$env:TARGET"
           New-Item -ItemType Directory -Force -Path "dist/$name" | Out-Null
           Copy-Item "target/$env:TARGET/release/openapi-lsp.exe" "dist/$name/"
           Copy-Item LICENSE, README.md "dist/$name/"

@@ -72,13 +72,14 @@ cargo build --target wasm32-wasip2
 `.github/workflows/lsp-release.yml` builds the `openapi-lsp` release artifacts:
 
 ```bash
-git tag lsp-v0.1.0 && git push origin lsp-v0.1.0
+git tag lsp-v0.2.0 && git push origin lsp-v0.2.0
 ```
 
 On an `lsp-v*` tag (or a manual `workflow_dispatch` against an existing tag) CI first runs clippy
 (`-D warnings`) and the tests, then builds five targets and packages each one as
-`openapi-lsp-<tag>-<target>.tar.gz` (`.zip` on Windows) with a sibling `.sha256`, and finally
-creates or updates the GitHub release for that tag:
+`openapi-lsp-<version>-<target>.tar.gz` (`.zip` on Windows) with a sibling `.sha256`, and finally
+creates or updates the GitHub release for that tag. `<version>` is the tag without its `lsp-`
+prefix, so `lsp-v0.2.0` produces `openapi-lsp-v0.2.0-aarch64-apple-darwin.tar.gz`:
 
 | Target | Runner |
 | --- | --- |
