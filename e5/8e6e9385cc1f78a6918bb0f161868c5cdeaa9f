@@ -1,0 +1,115 @@
+.github/workflows/lsp-release.yml
+  s_a12c5ca14eae48::t_da2a31bd7f4956 1-145
+.gitignore
+  s_32af16cf4b7f61::t_9b5dba068cfe77 1-29
+Cargo.lock
+  s_32af16cf4b7f61::t_4852eee99a0e53 1-1199
+Cargo.toml
+  s_32af16cf4b7f61::t_3183c23fe5b324 1-33
+LICENSE
+  s_a12c5ca14eae48::t_c8aa101077c328 1-21
+README.md
+  s_a12c5ca14eae48::t_0b469892cd5cea 1-114
+extension.toml
+  s_a12c5ca14eae48::t_0b51c67faba35c 1-15
+openapi-core/Cargo.toml
+  s_32af16cf4b7f61::t_7017c897f9ad73 1-18
+openapi-core/schemas/SOURCES.md
+  s_32af16cf4b7f61::t_6486aa892fcc49 1-19
+openapi-core/schemas/json-schema-2020-12/applicator.json
+  s_32af16cf4b7f61::t_f02a25a9d8f662 1-45
+openapi-core/schemas/json-schema-2020-12/content.json
+  s_32af16cf4b7f61::t_d836de2d827ead 1-14
+openapi-core/schemas/json-schema-2020-12/core.json
+  s_32af16cf4b7f61::t_0d5bf3481e732e 1-48
+openapi-core/schemas/json-schema-2020-12/format-annotation.json
+  s_32af16cf4b7f61::t_86df1b709d76a3 1-11
+openapi-core/schemas/json-schema-2020-12/meta-data.json
+  s_32af16cf4b7f61::t_b092af1b6e84a8 1-34
+openapi-core/schemas/json-schema-2020-12/schema.json
+  s_32af16cf4b7f61::t_dd38de120debf8 1-58
+openapi-core/schemas/json-schema-2020-12/unevaluated.json
+  s_32af16cf4b7f61::t_a1dfba3e3a9032 1-12
+openapi-core/schemas/json-schema-2020-12/validation.json
+  s_32af16cf4b7f61::t_da749480fafe11 1-95
+openapi-core/schemas/openapi-2.0.json
+  s_32af16cf4b7f61::t_1b1fa1ff9866f2 1-1607
+openapi-core/schemas/openapi-3.0.json
+  s_32af16cf4b7f61::t_4f6f597f7e906c 1-1662
+openapi-core/schemas/openapi-3.1.json
+  s_32af16cf4b7f61::t_5eb0904731682e 1-1440
+openapi-core/src/detect.rs
+  s_32af16cf4b7f61::t_a7aa6391b4ea7a 1-125
+openapi-core/src/document.rs
+  s_a12c5ca14eae48::t_c3156fc3ca492b 1-137
+openapi-core/src/jsonschema.rs
+  s_a12c5ca14eae48::t_9197d2a2599280 1-565
+openapi-core/src/keys.rs
+  s_a12c5ca14eae48::t_58b5170bee3033 1-85
+openapi-core/src/lib.rs
+  s_32af16cf4b7f61::t_0441dfa105a984 1-25
+openapi-core/src/locate.rs
+  s_a12c5ca14eae48::t_f7efd2027080f4 1-368
+openapi-core/src/pointer.rs
+  s_32af16cf4b7f61::t_cde6dabeade289 1-104
+openapi-core/src/pos.rs
+  s_32af16cf4b7f61::t_6fb6168603c35c 1-84
+openapi-core/src/refs.rs
+  s_32af16cf4b7f61::t_f908f31171f857 1-256
+openapi-core/src/resolve.rs
+  s_32af16cf4b7f61::t_9b61e92df8768f 1-97
+openapi-core/src/schemas.rs
+  s_32af16cf4b7f61::t_ea7d4d0e415338 1-116
+openapi-core/src/workspace.rs
+  s_32af16cf4b7f61::t_fb3b975f67be68 1-40
+openapi-lsp/Cargo.toml
+  s_32af16cf4b7f61::t_19e03450478d10 1-23
+openapi-lsp/src/completion.rs
+  s_a12c5ca14eae48::t_dda8aefbf52412 1-247
+openapi-lsp/src/definition.rs
+  s_32af16cf4b7f61::t_3dd2d03e6b5e61 1-76
+openapi-lsp/src/diagnostics.rs
+  s_32af16cf4b7f61::t_89adf6facad695 1-88
+openapi-lsp/src/hover.rs
+  s_a12c5ca14eae48::t_d9a9b8245f0008 1-76
+openapi-lsp/src/lib.rs
+  s_32af16cf4b7f61::t_2da3c35d67d65f 1-13
+openapi-lsp/src/main.rs
+  s_32af16cf4b7f61::t_680573edd482ef 1-10
+openapi-lsp/src/server.rs
+  s_32af16cf4b7f61::t_85e7cbe5ae0105 1-185
+openapi-lsp/tests/fixtures/pet.yaml
+  s_32af16cf4b7f61::t_eb99da979a0ea8 1-3
+openapi-lsp/tests/fixtures/petstore.json
+  s_32af16cf4b7f61::t_d627df33c63111 1-27
+openapi-lsp/tests/fixtures/petstore.yaml
+  s_32af16cf4b7f61::t_2e2352431e8a7c 1-29
+openapi-lsp/tests/lsp_features.rs
+  s_a12c5ca14eae48::t_9e4d32c527f61f 1-422
+src/lib.rs
+  s_32af16cf4b7f61::t_e7df303414caf0 1-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "e58e6e9385cc1f78a6918bb0f161868c5cdeaa9f",
+  "prompts": {},
+  "sessions": {
+    "s_32af16cf4b7f61": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "39d5b252-23b7-4e99-a4e4-d4f1431b164c",
+        "model": "unknown"
+      },
+      "human_author": "Dyqer <dyqer@hotmail.com>"
+    },
+    "s_a12c5ca14eae48": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4a4f0228-a00e-4690-bb69-471b99b10b7c",
+        "model": "unknown"
+      },
+      "human_author": "Dyqer <dyqer@hotmail.com>"
+    }
+  }
+}
