@@ -1,0 +1,23 @@
+extension.toml
+  s_05423ac50fd907::t_8a712a4a6aebf6 3
+Cargo.lock
+  s_05423ac50fd907::t_0ee2bd0cabdb44 474,484,1119
+Cargo.toml
+  s_05423ac50fd907::t_f946683749bc2f 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "d038bb2041f6560d42bb6651c2cc958c2d531433",
+  "prompts": {},
+  "sessions": {
+    "s_05423ac50fd907": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "65313d6d-0d07-45b4-bf3c-6686a46d1eba",
+        "model": "unknown"
+      },
+      "human_author": "Dyqer <dyqer@hotmail.com>"
+    }
+  }
+}
