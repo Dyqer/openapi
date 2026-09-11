@@ -1,6 +1,6 @@
 id = "openapi-lsp"
 name = "OpenAPI"
-version = "0.2.0"
+version = "0.2.1"
 schema_version = 1
 authors = ["Dyqer"]
 description = "OpenAPI language support: spec detection, $ref jump, hover, completion, and diagnostics"
