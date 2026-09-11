@@ -42,16 +42,17 @@ openapi-lsp/src
 
 2. Open an OpenAPI YAML/JSON file and try Go to Definition on a `$ref`.
 
-The language server is a separate binary, and the extension finds it for you: if `openapi-lsp` is
-on your `PATH` that one is used, otherwise the archive matching your platform is downloaded from
-[Releases](https://github.com/Dyqer/openapi/releases) on first start. To work on the server
-itself, put your own build on `PATH` — it always takes precedence:
+That is the whole setup — the language server installs itself. On first start the extension
+downloads the release archive matching your platform from
+[Releases](https://github.com/Dyqer/openapi/releases), unpacks it into its own version-keyed
+directory and marks the binary executable; Zed reports the progress as `Downloading`. Later
+starts reuse that binary, a new extension version downloads afresh rather than overwriting, and
+older versions are pruned. Nothing to install by hand, no `PATH` entry to set up.
 
-```bash
-cargo install --path openapi-lsp
-# verify
-which openapi-lsp
-```
+Two things can interrupt that. If `openapi-lsp` is already on your `PATH`, that binary wins and
+no download happens — which is how you work on the server itself (see Development). And only the
+five targets in [Releasing the language server](#releasing-the-language-server) are published; on
+anything else the extension tells you to build the server yourself.
 
 Zed builds the extension with `cargo build --target wasm32-wasip2`, so the workspace's
 `default-members` contains only the root crate — `openapi-core` and `openapi-lsp` are never pulled
@@ -66,6 +67,15 @@ cargo test -p openapi-core -p openapi-lsp
 
 # The extension itself holds almost no logic; Zed compiles this WASM on dev-extension install
 cargo build --target wasm32-wasip2
+```
+
+To run Zed against your own server instead of the downloaded one, put it on `PATH` — a `PATH`
+binary always takes precedence over the download:
+
+```bash
+cargo install --path openapi-lsp
+# verify
+which openapi-lsp
 ```
 
 ## Releasing the language server
@@ -92,8 +102,8 @@ binary at its root with no wrapper directory:
 | `x86_64-pc-windows-msvc` | `windows-latest` |
 
 `src/lib.rs` downloads from these same assets: the platform alone determines the name, so the
-extension needs no version table. Only the five targets above are covered; on anything else the
-extension asks you to build the server yourself.
+extension needs no version table, and adding a target here is all it takes for that platform's
+automatic install to start working.
 
 ## Where completions come from
 
