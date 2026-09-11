@@ -1,0 +1,19 @@
+extension.toml
+  s_05423ac50fd907::t_8a712a4a6aebf6 1,3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "de1e07c4a3504ec9c778229e29495447f0f7f75a",
+  "prompts": {},
+  "sessions": {
+    "s_05423ac50fd907": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "65313d6d-0d07-45b4-bf3c-6686a46d1eba",
+        "model": "unknown"
+      },
+      "human_author": "Dyqer <dyqer@hotmail.com>"
+    }
+  }
+}
